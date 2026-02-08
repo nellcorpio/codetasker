@@ -20,8 +20,8 @@ if (empty($prompt)) {
 
 // Configuration
 $API_KEY = 'AIzaSyBBYTbeRWBHGvaqe1lu7bh5OImlpFP9B84';
-$MODEL = 'gemini-2.0-flash';
-$API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$API_KEY";
+$MODEL = 'gemini-2.0-flash-lite';
+$API_URL = "https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent?key=$API_KEY";
 
 // Prepare payload for Gemini
 $payload = [
