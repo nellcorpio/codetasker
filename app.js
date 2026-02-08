@@ -3,15 +3,33 @@ const USE_DUMMY = false; // Toggle this to save tokens
 const MAX_RETRIES = 3; // Prevent infinite recursion
 
 const DUMMY_PROBLEMS = {
-    javascript: {
-        title: "Array Transformation Challenge",
-        description: "<p>You are given an array of integers. Write a function <code>transformData</code> that performs the following:</p><ul><li>Filters out numbers less than 10.</li><li>Squares the remaining numbers.</li><li>Returns the final array sorted in descending order.</li></ul><p><b>Example:</b><br>Input: [5, 12, 8, 15, 3]<br>Output: [225, 144]</p>",
-        starterCode: "/**\n * @param {number[]} arr\n * @return {number[]}\n */\nfunction transformData(arr) {\n    // Your code here\n}"
+    'challenge': {
+        javascript: {
+            title: "Array Transformation Challenge",
+            description: "<p>You are given an array of integers. Write a function <code>transformData</code> that performs the following:</p><ul><li>Filters out numbers less than 10.</li><li>Squares the remaining numbers.</li><li>Returns the final array sorted in descending order.</li></ul><p><b>Example:</b><br>Input: [5, 12, 8, 15, 3]<br>Output: [225, 144]</p>",
+            starterCode: "/**\n * @param {number[]} arr\n * @return {number[]}\n */\nfunction transformData(arr) {\n    // Your code here\n}"
+        },
+        python: {
+            title: "Dictionary Frequency Map",
+            description: "<p>Write a function <code>get_frequency</code> that takes a list of strings and returns a frequency map (dictionary).</p><p><b>Example:</b><br>Input: ['apple', 'banana', 'apple']<br>Output: {'apple': 2, 'banana': 1}</p>",
+            starterCode: "def get_frequency(items):\n    # Your code here\n    pass"
+        }
     },
-    python: {
-        title: "Dictionary Frequency Map",
-        description: "<p>Write a function <code>get_frequency</code> that takes a list of strings and returns a frequency map (dictionary).</p><p><b>Example:</b><br>Input: ['apple', 'banana', 'apple']<br>Output: {'apple': 2, 'banana': 1}</p>",
-        starterCode: "def get_frequency(items):\n    # Your code here\n    pass"
+    'multiple-choice': {
+        javascript: {
+            questions: [
+                { question: "What is the output of typeof null?", options: ["object", "null", "undefined", "string"], answer: 0 },
+                { question: "Which method adds an element to the end of an array?", options: ["push()", "pop()", "shift()", "unshift()"], answer: 0 }
+            ]
+        }
+    },
+    'fill-blanks': {
+        javascript: {
+            questions: [
+                { title: "Variable Declaration", code: "const x = {{blank}};\nconsole.log(x);", answers: ["10"] },
+                { title: "Function Definition", code: "function greet() {\n    return {{blank}};\n}", answers: ["'Hello'"] }
+            ]
+        }
     }
 };
 
@@ -34,16 +52,31 @@ const DIFFICULTY_GUIDELINES = {
     Expert: "Expert advanced system design, Expert design patterns, Expert complex concurrency/asynchrony, Expert deep language-specific optimizations, and Expert intricate algorithmic complexity."
 };
 
+const MODE_SETTINGS = {
+    Beginner: { time: 300, questions: 5 },
+    Easy: { time: 600, questions: 5 },
+    Medium: { time: 900, questions: 10 },
+    Hard: { time: 1200, questions: 15 },
+    Expert: { time: 1500, questions: 20 }
+};
+
 // App State
 let editor = null;
 let currentLanguage = 'javascript';
 let currentDifficulty = 'Beginner';
+let currentMode = 'challenge';
 let violationDetected = false;
 let timerStarted = false;
 let timerInterval = null;
+let secondsRemaining = 0;
 let secondsElapsed = 0;
 let pasteCount = 0;
 let retryCount = 0;
+
+// Quiz State
+let quizQuestions = [];
+let currentQuestionIndex = 0;
+let userAnswers = [];
 
 // Main Navigation Views
 const views = {
@@ -77,6 +110,7 @@ const selects = {
 function initSelectionCards() {
     setupCardListeners('difficulty-grid', (val) => { currentDifficulty = val; });
     setupCardListeners('language-grid', (val) => { currentLanguage = val; });
+    setupCardListeners('mode-grid', (val) => { currentMode = val; });
 }
 
 function setupCardListeners(gridId, callback) {
@@ -102,7 +136,7 @@ initSelectionCards();
 
 // Sync initial state with UI (active cards)
 function syncInitialSelection() {
-    ['difficulty-grid', 'language-grid'].forEach(gridId => {
+    ['difficulty-grid', 'language-grid', 'mode-grid'].forEach(gridId => {
         const grid = document.getElementById(gridId);
         if (!grid) return;
         const activeCard = grid.querySelector('.selection-card.active');
@@ -110,6 +144,7 @@ function syncInitialSelection() {
             const val = activeCard.dataset.value;
             if (gridId === 'difficulty-grid') currentDifficulty = val;
             if (gridId === 'language-grid') currentLanguage = val;
+            if (gridId === 'mode-grid') currentMode = val;
         }
     });
 }
@@ -173,14 +208,29 @@ function startTimer() {
     if (timerInterval) clearInterval(timerInterval);
 
     secondsElapsed = 0;
+    const settings = MODE_SETTINGS[currentDifficulty] || MODE_SETTINGS.Beginner;
+    secondsRemaining = settings.time;
+
+    updateTimerDisplay(); // Update immediately
+
     timerInterval = setInterval(() => {
         secondsElapsed++;
+        if (currentMode !== 'challenge') {
+            secondsRemaining--;
+            if (secondsRemaining <= 0) {
+                secondsRemaining = 0;
+                stopTimer();
+                alert("Time is up!");
+                evaluateSolution();
+            }
+        }
         updateTimerDisplay();
     }, 1000);
 }
 
 function updateTimerDisplay() {
-    const formatted = formatTime(secondsElapsed);
+    const timeToDisplay = currentMode === 'challenge' ? secondsElapsed : secondsRemaining;
+    const formatted = formatTime(timeToDisplay);
     if (components.timer) components.timer.textContent = formatted;
     if (components.challengeTimer) components.challengeTimer.textContent = formatted;
 }
@@ -299,20 +349,43 @@ async function generateProblem() {
     let problem;
     if (USE_DUMMY) {
         await new Promise(r => setTimeout(r, 1000));
-        problem = DUMMY_PROBLEMS[currentLanguage] || DUMMY_PROBLEMS['javascript'];
+        const modeProblems = DUMMY_PROBLEMS[currentMode] || DUMMY_PROBLEMS['challenge'];
+        problem = modeProblems[currentLanguage] || modeProblems['javascript'];
     } else {
         const guideline = DIFFICULTY_GUIDELINES[currentDifficulty] || "";
-        const prompt = `Act as a senior coding instructor. Generate a coding challenge for a ${currentDifficulty} level programmer in ${currentLanguage}.
+        const settings = MODE_SETTINGS[currentDifficulty] || MODE_SETTINGS.Beginner;
+
+        let promptSnippet = "";
+        if (currentMode === 'challenge') {
+            promptSnippet = `Return the response ONLY in valid JSON format with these exact keys:
+            "title": "A short descriptive title",
+            "description": "Clear explanation of the task, requirements, constraints, and 2-3 examples in HTML format.",
+            "starterCode": "Initial boilerplate code for the user to start with."`;
+        } else if (currentMode === 'multiple-choice') {
+            promptSnippet = `Generate ${settings.questions} multiple choice questions. 
+            Return the response ONLY in valid JSON format as an object with a "questions" key containing an array of objects. 
+            Each object must have:
+            "question": "The question text",
+            "options": ["A", "B", "C", "D"],
+            "answer": 0-3 (index of correct option)`;
+        } else if (currentMode === 'fill-blanks') {
+            promptSnippet = `Generate ${settings.questions} code snippets with 1-2 important parts missing. 
+            Represent blanks as {{blank}}.
+            Return the response ONLY in valid JSON format as an object with a "questions" key containing an array of objects.
+            Each object must have:
+            "title": "Short title",
+            "code": "Code snippet with {{blank}}",
+            "answers": ["correct_value_1", "correct_value_2"]`;
+        }
+
+        const prompt = `Act as a senior coding instructor. Mode: ${currentMode}. Level: ${currentDifficulty}. Language: ${currentLanguage}.
         
         Strict Guidelines for ${currentDifficulty} difficulty:
         ${guideline}
 
-        Ensure the challenge is strictly appropriate for this level. Not too easy, not too complex.
+        Ensure the challenge is strictly appropriate for this level.
         
-        Return the response ONLY in valid JSON format with these exact keys:
-        "title": "A short descriptive title",
-        "description": "Clear explanation of the task, requirements, constraints, and 2-3 examples in HTML format.",
-        "starterCode": "Initial boilerplate code for the user to start with."`;
+        ${promptSnippet}`;
 
         const result = await callGemini(prompt);
         if (!result) return;
@@ -320,10 +393,24 @@ async function generateProblem() {
     }
 
     if (problem) {
-        document.getElementById('problem-title').textContent = problem.title;
-        document.getElementById('problem-content').innerHTML = problem.description;
+        if (currentMode === 'challenge') {
+            document.getElementById('coding-container').classList.remove('hidden');
+            document.getElementById('quiz-container').classList.add('hidden');
 
-        initEditor(currentLanguage, problem.starterCode);
+            document.getElementById('problem-title').textContent = problem.title;
+            document.getElementById('problem-content').innerHTML = problem.description;
+            initEditor(currentLanguage, problem.starterCode);
+        } else {
+            document.getElementById('coding-container').classList.add('hidden');
+            document.getElementById('quiz-container').classList.remove('hidden');
+
+            quizQuestions = problem.questions || [];
+            currentQuestionIndex = 0;
+            userAnswers = new Array(quizQuestions.length).fill(null);
+            renderQuizQuestion();
+            startTimer();
+        }
+
         showView('challenge');
         retryCount = 0; // Reset on success
     } else if (retryCount < MAX_RETRIES) {
@@ -337,43 +424,146 @@ async function generateProblem() {
     }
 }
 
+function renderQuizQuestion() {
+    const question = quizQuestions[currentQuestionIndex];
+    if (!question) return;
+
+    // Update Progress
+    const progress = ((currentQuestionIndex + 1) / quizQuestions.length) * 100;
+    document.getElementById('quiz-progress-text').textContent = `Question ${currentQuestionIndex + 1} of ${quizQuestions.length}`;
+    document.getElementById('progress-fill').style.width = `${progress}%`;
+
+    // Update Question Area
+    document.getElementById('quiz-question-title').textContent = question.title || (currentMode === 'multiple-choice' ? "Select the correct answer" : "Fill the missing parts");
+
+    const contentArea = document.getElementById('quiz-question-content');
+    const optionsArea = document.getElementById('quiz-options');
+    optionsArea.innerHTML = '';
+
+    if (currentMode === 'multiple-choice') {
+        contentArea.textContent = question.question;
+        question.options.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.className = `option-btn ${userAnswers[currentQuestionIndex] === idx ? 'selected' : ''}`;
+            btn.innerHTML = `<span class="option-letter">${String.fromCharCode(65 + idx)}</span> <span class="option-text">${opt}</span>`;
+            btn.onclick = () => {
+                userAnswers[currentQuestionIndex] = idx;
+                renderQuizQuestion();
+            };
+            optionsArea.appendChild(btn);
+        });
+    } else if (currentMode === 'fill-blanks') {
+        let codeWithInputs = question.code;
+        // Simple logic to replace {{blank}} with inputs
+        let blankIdx = 0;
+        codeWithInputs = codeWithInputs.replace(/{{blank}}/g, () => {
+            const val = (userAnswers[currentQuestionIndex] && userAnswers[currentQuestionIndex][blankIdx]) || '';
+            const input = `<input type="text" class="blank-input" data-idx="${blankIdx}" value="${val}" placeholder="..." onchange="updateBlankAnswer(this)">`;
+            blankIdx++;
+            return input;
+        });
+        contentArea.innerHTML = `<pre><code>${codeWithInputs}</code></pre>`;
+    }
+
+    // Update Controls
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const submitBtn = document.getElementById('quiz-submit-btn');
+
+    prevBtn.disabled = currentQuestionIndex === 0;
+
+    if (currentQuestionIndex === quizQuestions.length - 1) {
+        nextBtn.classList.add('hidden');
+        submitBtn.classList.remove('hidden');
+    } else {
+        nextBtn.classList.remove('hidden');
+        submitBtn.classList.add('hidden');
+    }
+}
+
+function updateBlankAnswer(input) {
+    const idx = parseInt(input.dataset.idx);
+    if (!userAnswers[currentQuestionIndex]) userAnswers[currentQuestionIndex] = [];
+    userAnswers[currentQuestionIndex][idx] = input.value;
+}
+
+// Add these to Global Init or Event Listeners
+document.getElementById('next-btn').addEventListener('click', () => {
+    if (currentQuestionIndex < quizQuestions.length - 1) {
+        currentQuestionIndex++;
+        renderQuizQuestion();
+    }
+});
+
+document.getElementById('prev-btn').addEventListener('click', () => {
+    if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        renderQuizQuestion();
+    }
+});
+
+document.getElementById('quiz-submit-btn').addEventListener('click', evaluateSolution);
+
 async function evaluateSolution() {
     if (violationDetected) return;
 
-    const userCode = editor.getValue();
-    const problemTitle = document.getElementById('problem-title').textContent;
-    const problemDesc = document.getElementById('problem-content').innerHTML;
-
     showView('loading');
     document.getElementById('loading-text').textContent = 'Processing assessment...';
-    const finalTime = formatTime(secondsElapsed);
+    const finalTime = formatTime(currentMode === 'challenge' ? secondsElapsed : (MODE_SETTINGS[currentDifficulty].time - secondsRemaining));
     stopTimer();
 
     let evaluation;
-    if (USE_DUMMY) {
-        await new Promise(r => setTimeout(r, 1500));
-        evaluation = DUMMY_EVALUATION;
-    } else {
-        const prompt = `Act as a strict technical interviewer. Evaluate the following ${currentLanguage} solution for the problem: "${problemTitle}".
-        
-        Rigorous Evaluation Criteria:
-        1. Correctness: Does it solve all aspects of the problem? (40%)
-        2. Efficiency: Is the time and space complexity optimal? (30%)
-        3. Readability & Style: Is the code clean and well-structured? (20%)
-        4. Edge Cases: Does it handle empty input, nulls, or boundary values? (10%)
 
-        Problem Context: ${problemDesc}
-        User Solution:
-        ${userCode}
+    if (currentMode === 'challenge') {
+        const userCode = editor.getValue();
+        const problemTitle = document.getElementById('problem-title').textContent;
+        const problemDesc = document.getElementById('problem-content').innerHTML;
+
+        if (USE_DUMMY) {
+            await new Promise(r => setTimeout(r, 1500));
+            evaluation = DUMMY_EVALUATION;
+        } else {
+            const prompt = `Act as a strict technical interviewer. Evaluate the following ${currentLanguage} solution for the problem: "${problemTitle}".
+            
+            Rigorous Evaluation Criteria:
+            1. Correctness: Does it solve all aspects of the problem? (40%)
+            2. Efficiency: Is the time and space complexity optimal? (30%)
+            3. Readability & Style: Is the code clean and well-structured? (20%)
+            4. Edge Cases: Does it handle empty input, nulls, or boundary values? (10%)
+
+            Problem Context: ${problemDesc}
+            User Solution:
+            ${userCode}
+
+            Return the evaluation ONLY in valid JSON format with these exact keys:
+            "score": (integer 0-100),
+            "rating": "Stars representation based on score (0-20=★☆☆☆☆, 21-40=★★☆☆☆, 41-60=★★★☆☆, 61-80=★★★★☆, 81-100=★★★★★)",
+            "feedback": "Concise technical summary of performance in HTML format.",
+            "suggestions": ["List of 3 specific technical optimization tips or corrections in HTML format"]`;
+
+            const result = await callGemini(prompt);
+            if (!result) return;
+            evaluation = parseAIJSON(result);
+        }
+    } else {
+        // Evaluate Quiz (MCQ/Fill Blanks)
+        const prompt = `Act as a strict technical examiner. Evaluate the user's answers for a ${currentMode} quiz in ${currentLanguage}.
+        
+        Quiz Data: ${JSON.stringify(quizQuestions)}
+        User Answers: ${JSON.stringify(userAnswers)}
 
         Return the evaluation ONLY in valid JSON format with these exact keys:
         "score": (integer 0-100),
-        "rating": "Stars representation based on score (0-20=★☆☆☆☆, 21-40=★★☆☆☆, 41-60=★★★☆☆, 61-80=★★★★☆, 81-100=★★★★★)",
-        "feedback": "Concise technical summary of performance in HTML format.",
-        "suggestions": ["List of 3 specific technical optimization tips or corrections in HTML format (e.g. <b>Tip:</b> ...)"]`;
+        "rating": "Stars representation",
+        "feedback": "Summary of what they got right/wrong in HTML format.",
+        "suggestions": ["Specific tips to improve in HTML format"]`;
 
         const result = await callGemini(prompt);
-        if (!result) return;
+        if (!result) {
+            alert('Evaluation failed. Please try submitting again.');
+            showView('challenge');
+            return;
+        }
         evaluation = parseAIJSON(result);
     }
 
@@ -383,7 +573,10 @@ async function evaluateSolution() {
         document.getElementById('time-taken').textContent = finalTime;
         document.getElementById('feedback-content').innerHTML = evaluation.feedback;
 
-        // Dynamic Status Logic
+        // Populate Language and Difficulty in Results
+        document.getElementById('results-lang').textContent = currentLanguage.toUpperCase();
+        document.getElementById('results-diff').textContent = currentDifficulty.toUpperCase();
+
         const statusEl = document.getElementById('completion-status');
         let status = "COMPLETED";
         let color = "var(--success)";
@@ -423,3 +616,4 @@ buttons.reset.addEventListener('click', () => {
         generateProblem();
     }
 });
+
