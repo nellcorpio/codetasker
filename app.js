@@ -1,6 +1,6 @@
-const API_KEY = 'AIzaSyBBYTbeRWBHGvaqe1lu7bh5OImlpFP9B84';
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`;
+const API_URL = './api.php';
 const USE_DUMMY = false; // Toggle this to save tokens
+const MAX_RETRIES = 3; // Prevent infinite recursion
 
 const DUMMY_PROBLEMS = {
     javascript: {
@@ -43,6 +43,7 @@ let timerStarted = false;
 let timerInterval = null;
 let secondsElapsed = 0;
 let pasteCount = 0;
+let retryCount = 0;
 
 // Main Navigation Views
 const views = {
@@ -98,6 +99,21 @@ function setupCardListeners(gridId, callback) {
 
 // Global Init
 initSelectionCards();
+
+// Sync initial state with UI (active cards)
+function syncInitialSelection() {
+    ['difficulty-grid', 'language-grid'].forEach(gridId => {
+        const grid = document.getElementById(gridId);
+        if (!grid) return;
+        const activeCard = grid.querySelector('.selection-card.active');
+        if (activeCard) {
+            const val = activeCard.dataset.value;
+            if (gridId === 'difficulty-grid') currentDifficulty = val;
+            if (gridId === 'language-grid') currentLanguage = val;
+        }
+    });
+}
+syncInitialSelection();
 
 // Initialize Monaco Editor
 require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } });
@@ -186,6 +202,17 @@ function triggerViolation() {
     showOverlay('violation');
 }
 
+function resetState() {
+    violationDetected = false;
+    timerStarted = false;
+    secondsElapsed = 0;
+    pasteCount = 0;
+    retryCount = 0;
+    if (components.timer) components.timer.textContent = '00:00';
+    if (components.challengeTimer) components.challengeTimer.textContent = '00:00';
+    if (components.violation) components.violation.classList.add('hidden');
+}
+
 function showView(viewName) {
     Object.keys(views).forEach(key => {
         views[key].classList.add('hidden');
@@ -204,23 +231,41 @@ function showOverlay(name) {
 // AI Integration
 async function callGemini(prompt) {
     if (USE_DUMMY) return null;
+
+    // Track current view to revert if error occurs
+    const previousView = Object.keys(views).find(key => !views[key].classList.contains('hidden')) || 'setup';
+
     try {
+        console.log(`Calling Gemini [${MODEL}] with prompt length: ${prompt.length}`);
+
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
-            })
+            body: JSON.stringify({ prompt: prompt })
         });
+
         const data = await response.json();
-        if (data.candidates && data.candidates[0]) {
-            return data.candidates[0].content.parts[0].text;
+
+        if (data.error) {
+            console.error('Gemini API Error Object:', data.error);
+            throw new Error(data.error.message || 'API Error');
         }
-        throw new Error('Invalid API response');
+
+        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+            const text = data.candidates[0].content.parts[0].text;
+            console.log('Gemini Response Received successfully');
+            return text;
+        }
+
+        console.warn('Empty or invalid candidates in response:', data);
+        throw new Error('AI failed to generate a response. Please try again.');
+
     } catch (error) {
-        console.error('AI Error:', error);
-        alert('An unexpected error occurred. Please try again.');
-        showView('setup');
+        console.error('Critical AI Error:', error);
+        alert(`API Error: ${error.message}`);
+
+        // Revert to stable view
+        showView(previousView);
         return null;
     }
 }
@@ -242,12 +287,9 @@ async function generateProblem() {
     showView('loading');
     document.getElementById('loading-text').textContent = `Initialising...`;
     stopTimer();
+    resetState();
 
-    if (components.timer) components.timer.textContent = '00:00';
-    if (components.challengeTimer) components.challengeTimer.textContent = '00:00';
-    timerStarted = false;
-    secondsElapsed = 0;
-    pasteCount = 0;
+    // Problem generation logic
 
     // Update Meta Info
     document.getElementById('display-lang').textContent = currentLanguage.toUpperCase();
@@ -282,8 +324,15 @@ async function generateProblem() {
 
         initEditor(currentLanguage, problem.starterCode);
         showView('challenge');
-    } else {
+        retryCount = 0; // Reset on success
+    } else if (retryCount < MAX_RETRIES) {
+        retryCount++;
+        console.warn(`Problem generation failed. Retry ${retryCount}/${MAX_RETRIES}`);
         generateProblem();
+    } else {
+        alert('Failed to generate a challenge after several attempts. Please try again later.');
+        showView('setup');
+        retryCount = 0;
     }
 }
 
@@ -347,7 +396,11 @@ async function evaluateSolution() {
         statusEl.style.color = color;
 
         const suggestionsList = document.getElementById('suggestions-content');
-        suggestionsList.innerHTML = evaluation.suggestions.map(s => `<div class="suggestion-item">${s}</div>`).join('');
+        if (Array.isArray(evaluation.suggestions)) {
+            suggestionsList.innerHTML = evaluation.suggestions.map(s => `<div class="suggestion-item">${s}</div>`).join('');
+        } else {
+            suggestionsList.innerHTML = '<div class="suggestion-item">No specific suggestions provided.</div>';
+        }
 
         showView('results');
     } else {
@@ -361,6 +414,7 @@ buttons.start.addEventListener('click', generateProblem);
 buttons.submit.addEventListener('click', evaluateSolution);
 buttons.restart.addEventListener('click', () => {
     stopTimer();
+    resetState();
     showView('setup');
 });
 buttons.reset.addEventListener('click', () => {
@@ -368,6 +422,3 @@ buttons.reset.addEventListener('click', () => {
         generateProblem();
     }
 });
-
-
-
