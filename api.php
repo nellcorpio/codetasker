@@ -19,14 +19,15 @@ if (empty($prompt)) {
 }
 
 // Configuration
-$API_KEY = 'AIzaSyBBYTbeRWBHGvaqe1lu7bh5OImlpFP9B84';
-$MODEL = 'gemini-2.0-flash-lite';
-$API_URL = "https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent?key=$API_KEY";
+$API_KEY = 'sk-pDZWXcs41s04refwJaJWWsQz9tkXE';
+$MODEL = 'openai/gpt-5.2';
+$API_URL = "https://api.apifree.ai/v1/chat/completions";
 
-// Prepare payload for Gemini
+// Prepare payload for OpenAI-compatible API
 $payload = [
-    'contents' => [
-        ['parts' => [['text' => $prompt]]]
+    'model' => $MODEL,
+    'messages' => [
+        ['role' => 'user', 'content' => $prompt]
     ]
 ];
 
@@ -35,7 +36,10 @@ $ch = curl_init($API_URL);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    'Content-Type: application/json',
+    'Authorization: Bearer ' . $API_KEY
+]);
 
 // Execute request
 $response = curl_exec($ch);
