@@ -257,10 +257,14 @@ header {
 }
 
 .problem-view {
+    width: 100%;
+}
+
+.problem-layout {
     display: grid;
     grid-template-columns: 1fr 1.5fr;
     gap: 2rem;
-    height: 700px;
+    min-height: 700px;
 }
 
 .problem-description {
@@ -413,6 +417,155 @@ header {
     font-size: 0.95rem;
 }
 
+/* Quiz Specific Styles */
+#quiz-container {
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+    grid-column: 1 / -1;
+    /* Span full columns of .problem-view grid */
+}
+
+.quiz-card {
+    padding: 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.quiz-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+#quiz-progress-text {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.progress-bar {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.quiz-content {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+}
+
+.options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.option-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    padding: 1.25rem;
+    border-radius: 12px;
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.option-btn:hover {
+    border-color: var(--primary);
+    background: rgba(var(--primary-rgb), 0.1);
+    transform: translateY(-2px);
+}
+
+.option-btn.selected {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.2), rgba(var(--secondary-rgb), 0.1));
+    box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.2);
+}
+
+.option-btn .option-letter {
+    width: 30px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: var(--primary);
+}
+
+.blank-input {
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    border-bottom: 2px solid var(--primary);
+    color: var(--secondary);
+    font-family: 'Fira Code', monospace;
+    font-size: inherit;
+    padding: 2px 8px;
+    width: 120px;
+    outline: none;
+    transition: all 0.2s ease;
+    border-radius: 4px 4px 0 0;
+}
+
+.blank-input:focus {
+    background: rgba(var(--primary-rgb), 0.1);
+}
+
+.quiz-controls {
+    display: flex;
+    justify-content: space-between;
+    gap: 1.5rem;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.problem-view>* {
+    animation: fadeIn 0.5s ease forwards;
+}
+
+/* responsive quiz */
+@media (max-width: 768px) {
+    .options-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Problem Content Typography */
 #problem-content {
     font-size: 1.05rem;
@@ -450,9 +603,9 @@ header {
 
 /* Responsive */
 @media (max-width: 900px) {
-    .problem-view {
+    .problem-layout {
         grid-template-columns: 1fr;
-        height: auto;
+        min-height: auto;
     }
 
     #editor-container {
@@ -460,13 +613,52 @@ header {
     }
 
     .hero h1 {
-        font-size: 2.5rem;
+        font-size: 3rem;
     }
 
     .challenge-header {
         flex-direction: column;
-        gap: 1rem;
-        align-items: flex-start;
+        gap: 1.5rem;
+        align-items: stretch;
+        padding: 1.5rem;
+    }
+
+    .challenge-timer {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 600px) {
+    .app-container {
+        padding: 1rem;
+    }
+
+    header {
+        margin-bottom: 2rem;
+    }
+
+    .hero h1 {
+        font-size: 2.2rem;
+    }
+
+    .hero p {
+        font-size: 1.1rem;
+    }
+
+    .quiz-card {
+        padding: 1.5rem;
+    }
+
+    .quiz-content {
+        padding: 1.2rem;
+    }
+
+    #editor-container {
+        height: 400px;
+    }
+
+    .selection-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
