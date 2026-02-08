@@ -1,6 +1,6 @@
 const API_KEY = 'AIzaSyCpEK6_nlu8rQvi5Kz6xOMhyqcARo5padA';
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`;
-const USE_DUMMY = true; // Toggle this to save tokens
+const USE_DUMMY = false; // Toggle this to save tokens
 
 const DUMMY_PROBLEMS = {
     javascript: {
@@ -368,4 +368,5 @@ buttons.reset.addEventListener('click', () => {
         generateProblem();
     }
 });
+
 
