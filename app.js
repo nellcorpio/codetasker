@@ -28,10 +28,10 @@ const DUMMY_EVALUATION = {
 
 const DIFFICULTY_GUIDELINES = {
     Beginner: "Basic syntax, variables, simple arithmetic, and printing output. No complex logic or standard libraries.",
-    Easy: "Basic loops, arrays, simple string manipulation, and standard mathematical functions.",
-    Medium: "Multidimensional arrays, nested loops, basic data structures (sets, maps), and basic sorting/searching.",
-    Hard: "Complex algorithms, custom classes/interfaces, memory management concepts, and performance optimization.",
-    Expert: "Advanced system design, design patterns, complex concurrency/asynchrony, deep language-specific optimizations, and intricate algorithmic complexity."
+    Easy: "Easy loops, Easy arrays, Easy simple string manipulation, and Easy standard mathematical functions.",
+    Medium: "Medium multidimensional arrays, Medium nested loops, Medium basic data structures (sets, maps), and Medium basic sorting/searching.",
+    Hard: "Hard complex algorithms, Hard custom classes/interfaces, Hard memory management concepts, and Hard performance optimization.",
+    Expert: "Expert advanced system design, Expert design patterns, Expert complex concurrency/asynchrony, Expert deep language-specific optimizations, and Expert intricate algorithmic complexity."
 };
 
 // App State
@@ -252,9 +252,9 @@ async function callGemini(prompt) {
             throw new Error(`${msg}${data.error.status ? ` (${data.error.status})` : ''}`);
         }
 
-        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-            const text = data.candidates[0].content.parts[0].text;
-            console.log('Gemini Response Received successfully');
+        if (data.choices && data.choices[0] && data.choices[0].message) {
+            const text = data.choices[0].message.content;
+            console.log('AI Response Received successfully');
             return text;
         }
 
