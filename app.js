@@ -53,7 +53,7 @@ const DIFFICULTY_GUIDELINES = {
 };
 
 const MODE_SETTINGS = {
-    Beginner: { time: 300, questions: 5 },
+    Beginner: { time: 300, questions: 10 },
     Easy: { time: 600, questions: 5 },
     Medium: { time: 900, questions: 10 },
     Hard: { time: 1200, questions: 15 },
