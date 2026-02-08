@@ -236,7 +236,7 @@ async function callGemini(prompt) {
     const previousView = Object.keys(views).find(key => !views[key].classList.contains('hidden')) || 'setup';
 
     try {
-        console.log(`Calling Gemini [${MODEL}] with prompt length: ${prompt.length}`);
+        console.log(`Calling Gemini Proxy with prompt length: ${prompt.length}`);
 
         const response = await fetch(API_URL, {
             method: 'POST',
@@ -247,8 +247,9 @@ async function callGemini(prompt) {
         const data = await response.json();
 
         if (data.error) {
-            console.error('Gemini API Error Object:', data.error);
-            throw new Error(data.error.message || 'API Error');
+            console.error('Gemini API Error Detail:', JSON.stringify(data.error, null, 2));
+            const msg = data.error.message || 'API Error';
+            throw new Error(`${msg}${data.error.status ? ` (${data.error.status})` : ''}`);
         }
 
         if (data.candidates && data.candidates[0] && data.candidates[0].content) {
