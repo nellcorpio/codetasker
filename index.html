@@ -30,10 +30,29 @@
         <!-- Landing / Setup View -->
         <main id="setup-view" class="hero">
             <h1 class="gradient-text">Master Your <br>Coding Skills</h1>
-            <p>AI-powered challenges tailored to your level. <br>Instant expert feedback. Real technical growth.</p>
+            <p>Test your skills with interactive coding challenges. <br> Lets you practice coding in real-time.</p>
 
             <div class="glass-card"
                 style="margin-top: 1rem; text-align: left; max-width: 900px; margin-left: auto; margin-right: auto; padding: 3rem;">
+
+                <!-- Game Mode Selection -->
+                <div class="selection-section">
+                    <h2>Select Game Mode</h2>
+                    <div class="selection-grid" id="mode-grid">
+                        <div class="selection-card active" data-value="challenge">
+                            <span class="icon">💻</span>
+                            <span class="label">Coding Challenge</span>
+                        </div>
+                        <div class="selection-card" data-value="multiple-choice">
+                            <span class="icon">📝</span>
+                            <span class="label">Multiple Choice</span>
+                        </div>
+                        <div class="selection-card" data-value="fill-blanks">
+                            <span class="icon">✏️</span>
+                            <span class="label">Fill the Blanks</span>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Difficulty Selection -->
                 <div class="selection-section">
@@ -122,18 +141,50 @@
             </div>
 
             <div class="problem-view">
-                <div class="problem-description glass-card">
-                    <h2 id="problem-title" style="margin-bottom: 1.5rem; font-size: 1.8rem;">Task Title</h2>
-                    <div id="problem-content">
-                        <!-- Content will be injected by AI -->
+                <!-- Standard Challenge View (Monaco) -->
+                <div id="coding-container" class="problem-layout">
+                    <div class="problem-description glass-card">
+                        <h2 id="problem-title" style="margin-bottom: 1.5rem; font-size: 1.8rem;">Task Title</h2>
+                        <div id="problem-content">
+                            <!-- Content will be injected by AI -->
+                        </div>
+                    </div>
+                    <div class="code-view">
+                        <div id="editor-container"></div>
+                        <div style="display: flex; gap: 1rem;">
+                            <button id="submit-btn" class="btn" style="flex: 2;">Submit Solution</button>
+                            <button id="reset-btn" class="btn"
+                                style="flex: 1; background: var(--card-bg); border: 1px solid var(--border);">Reset</button>
+                        </div>
                     </div>
                 </div>
-                <div class="code-view">
-                    <div id="editor-container"></div>
-                    <div style="display: flex; gap: 1rem;">
-                        <button id="submit-btn" class="btn" style="flex: 2;">Submit Solution</button>
-                        <button id="reset-btn" class="btn"
-                            style="flex: 1; background: var(--card-bg); border: 1px solid var(--border);">Reset</button>
+
+                <!-- Quiz View (Multiple Choice / Fill Blanks) -->
+                <div id="quiz-container" class="hidden">
+                    <div class="quiz-card glass-card">
+                        <div class="quiz-progress">
+                            <span id="quiz-progress-text">Question 1 of 5</span>
+                            <div class="progress-bar">
+                                <div id="progress-fill" class="progress-fill" style="width: 20%;"></div>
+                            </div>
+                        </div>
+
+                        <div id="quiz-question-area">
+                            <h2 id="quiz-question-title" style="margin-bottom: 1rem;">Question Title</h2>
+                            <div id="quiz-question-content" class="quiz-content">
+                                <!-- Question text or code snippet with blanks -->
+                            </div>
+                        </div>
+
+                        <div id="quiz-options" class="options-grid">
+                            <!-- Multiple choice options injected here -->
+                        </div>
+
+                        <div class="quiz-controls">
+                            <button id="prev-btn" class="btn btn-secondary" disabled>Previous</button>
+                            <button id="next-btn" class="btn">Next Question</button>
+                            <button id="quiz-submit-btn" class="btn btn-launch hidden">Finish Quiz</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -168,7 +219,12 @@
                         <h3>Status</h3>
                         <div id="completion-status" class="result-value"
                             style="color: var(--success); font-size: 1.5rem;">COMPLETED</div>
-                        <div style="color: var(--text-dim); font-size: 0.9rem;">Fairness check: Clean</div>
+                        <div style="color: var(--text-dim); font-size: 0.8rem; margin-top: 5px;">
+                            <span id="results-lang" class="badge badge-lang"
+                                style="font-size: 0.7rem; padding: 2px 8px;">JAVA</span>
+                            <span id="results-diff" class="badge badge-diff"
+                                style="font-size: 0.7rem; padding: 2px 8px;">HARD</span>
+                        </div>
                     </div>
                 </div>
 
@@ -209,8 +265,8 @@
         <!-- Violation Overlay -->
         <div id="violation-overlay" class="hidden"
             style="position: fixed; inset: 0; background: #0d1117; z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 2rem;">
-            <h1 style="color: var(--text-dim); margin-bottom: 1rem;">Session Expired</h1>
-            <p>The current session has been terminated.</p>
+            <h1 style="color: var(--text-dim); margin-bottom: 1rem;">Oops! You did something fishy</h1>
+            <p>Session has been terminated.</p>
             <button onclick="location.reload()" class="btn" style="margin-top: 2rem;">Return to Home</button>
         </div>
     </div>
